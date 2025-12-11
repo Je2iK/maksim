@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}{{ car.brand }} {{ car.model }} — {{ car.vin }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-5">
+    {% set img_src = car.image_path and url_for('static', filename='uploads/' ~ car.image_path) or car.image_url %}
+    {% if img_src %}
+      <img src="{{ img_src }}" class="img-fluid rounded border" alt="{{ car.brand }} {{ car.model }}">
+    {% else %}
+      <div class="text-muted">Фото отсутствует</div>
+    {% endif %}
+  </div>
+
+  <div class="col-md-7">
+    <h3 class="mb-3">{{ car.brand }} {{ car.model }} ({{ car.year }})</h3>
+
+    <div class="mb-2"><strong>VIN:</strong> {{ car.vin }}</div>
+    <div class="mb-2"><strong>Цвет:</strong> {{ car.color or '—' }}</div>
+
+    <div class="mb-2">
+      <strong>Цена:</strong>
+      {{ '{:,.2f}'.format(car.price).replace(',', ' ') }}
+      {% if car.currency == 'RUB' %}₽{% elif car.currency == 'USD' %}${% elif car.currency == 'EUR' %}€{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <strong>Статус:</strong>
+      {% if car.status=='sold' %}
+        <span class="badge bg-secondary">Продано</span>
+      {% elif car.status=='reserved' %}
+        <span class="badge bg-warning text-dark">Резерв</span>
+      {% else %}
+        <span class="badge bg-success">В наличии</span>
+      {% endif %}
+    </div>
+
+    {% if car.description %}
+      <div class="card mb-3">
+        <div class="card-body p-3">
+          <div style="white-space:pre-wrap; color:var(--text);">
+            {{ car.description }}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('cars.list_') }}" class="btn btn-outline-secondary">Назад к каталогу</a>
+
+      {% if current_user.is_authenticated and current_user.is_buyer and car.status != 'sold' %}
+        <a href="{{ url_for('inq.new', car_id=car.id) }}" class="btn btn-primary">
+          Связаться с продавцом
+        </a>
+      {% endif %}
+
+      {% if current_user.is_authenticated and (current_user.is_admin or (current_user.is_seller and car.seller_id==current_user.id)) %}
+        <a href="{{ url_for('cars.edit', car_id=car.id) }}" class="btn btn-outline-primary">Редактировать</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
