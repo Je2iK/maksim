@@ -49,7 +49,7 @@ def register():
             flash("Пользователь с таким email уже существует", "warning")
             return render_template("auth/register.html", form=form)
 
-        last, first, middle = split_full_name(form.full_name.data)
+        last, first, middle = form.last_name.data, form.first_name.data, form.middle_name.data
 
         user = User(
             email=email,
