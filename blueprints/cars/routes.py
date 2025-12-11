@@ -138,9 +138,13 @@ def delete(car_id):
     if not (current_user.is_admin or car.seller_id == current_user.id):
         abort(403)
     _remove_image(car.image_path)
-    db.session.delete(car)
-    db.session.commit()
-    flash('Объявление удалено', 'info')
+    try:
+        db.session.delete(car)
+        db.session.commit()
+        flash('Объявление удалено', 'info')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Невозможно удалить объявление: есть связанные записи.', 'error')
     return redirect(url_for('cars.my'))
 
 @bp.route('/<int:car_id>')

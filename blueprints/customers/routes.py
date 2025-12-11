@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from . import bp
 from extensions import db
@@ -80,7 +81,11 @@ def edit(customer_id):
 @bp.route('/<int:customer_id>/delete', methods=['POST'])
 def delete(customer_id):
     c = Customer.query.get_or_404(customer_id)
-    db.session.delete(c)
-    db.session.commit()
-    flash('Клиент удалён', 'info')
+    try:
+        db.session.delete(c)
+        db.session.commit()
+        flash('Клиент удалён', 'info')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Невозможно удалить клиента: есть связанные записи.', 'error')
     return redirect(url_for('customers.list_'))

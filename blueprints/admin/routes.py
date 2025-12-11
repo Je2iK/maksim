@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, flash
+from sqlalchemy.exc import IntegrityError
 from . import bp
 from extensions import db
 from models import User, Car
@@ -18,16 +19,24 @@ def delete_user(user_id):
     if u.role == 'admin':
         flash('Нельзя удалить администратора.', 'warning')
     else:
-        db.session.delete(u)
-        db.session.commit()
-        flash('Пользователь удалён.', 'info')
+        try:
+            db.session.delete(u)
+            db.session.commit()
+            flash('Пользователь удалён.', 'info')
+        except IntegrityError:
+            db.session.rollback()
+            flash('Невозможно удалить пользователя: есть связанные записи.', 'error')
     return redirect(url_for('admin.panel'))
 
 @bp.route('/cars/<int:car_id>/delete', methods=['POST'])
 @admin_required
 def delete_car(car_id):
     c = Car.query.get_or_404(car_id)
-    db.session.delete(c)
-    db.session.commit()
-    flash('Машина удалена.', 'info')
+    try:
+        db.session.delete(c)
+        db.session.commit()
+        flash('Машина удалена.', 'info')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Невозможно удалить машину: есть связанные записи.', 'error')
     return redirect(url_for('admin.panel'))

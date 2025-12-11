@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from . import bp
 from extensions import db
@@ -76,7 +77,11 @@ def edit(employee_id):
 @admin_required
 def delete(employee_id):
     e = Employee.query.get_or_404(employee_id)
-    db.session.delete(e)
-    db.session.commit()
-    flash('Сотрудник удалён', 'info')
+    try:
+        db.session.delete(e)
+        db.session.commit()
+        flash('Сотрудник удалён', 'info')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Невозможно удалить сотрудника: есть связанные записи.', 'error')
     return redirect(url_for('employees.list_'))

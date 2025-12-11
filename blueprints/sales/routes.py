@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash
+from sqlalchemy.exc import IntegrityError
 from . import bp
 from extensions import db
 from models import Sale, Car, Customer, Employee
@@ -46,11 +47,15 @@ def create():
 @bp.route('/<int:sale_id>/delete', methods=['POST'])
 def delete(sale_id):
     sale = Sale.query.get_or_404(sale_id)
-    if sale.car:
-        sale.car.status = 'in_stock'
-    db.session.delete(sale)
-    db.session.commit()
-    flash('Продажа удалена', 'info')
+    try:
+        if sale.car:
+            sale.car.status = 'in_stock'
+        db.session.delete(sale)
+        db.session.commit()
+        flash('Продажа удалена', 'info')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Невозможно удалить продажу: есть связанные записи.', 'error')
     return redirect(url_for('sales.list_'))
 
 @bp.route('/my')
